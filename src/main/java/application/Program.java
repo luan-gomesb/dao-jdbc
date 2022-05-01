@@ -10,11 +10,19 @@ import java.util.function.Consumer;
 
 public class Program {
     public static void main(String[] args) {
-        // get seller by id test
-        Integer id = 1;
+        SellerDao sellerDao = DaoFactory.createSellerDao();
+
+        System.out.print("--------- ");
+        System.out.print("All Sellers ");
+        System.out.print("---------\n");
+
+        List<Seller> allSellers = sellerDao.findAll();
+        allSellers.stream().forEach(System.out::println);
+    }
+    public static void testFindByDep(){
+        Integer id = 2;
         Department dep = new Department();
         dep.setId(id);
-        dep.setName("Computers");
 
         SellerDao sellerDao = DaoFactory.createSellerDao();
         List<Seller> depSellers = sellerDao.findByDepartment(dep);
@@ -26,7 +34,8 @@ public class Program {
         System.out.printf("%s Department Sellers ", dep.getName());
         System.out.print("---------\n");
 
-        depSellers.stream().forEach(showSeller);
-    }
+        depSellers.stream().forEach(System.out::println);
+        // depSellers.stream().forEach(showSeller);
 
+    }
 }
