@@ -1,5 +1,6 @@
 package model.dao.impl;
 
+import com.mysql.cj.exceptions.DeadlockTimeoutRollbackMarker;
 import db.DB;
 import model.dao.SellerDao;
 import model.entities.Department;
@@ -7,7 +8,9 @@ import model.entities.Seller;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SellerDaoJDBC implements SellerDao {
     private Connection conn = null;
@@ -77,8 +80,13 @@ public class SellerDaoJDBC implements SellerDao {
             st = conn.prepareStatement(query);
             st.setInt(1,department.getId());
             rs = st.executeQuery();
+            Map<Integer,Department> departmentMap = new HashMap<>();
             while(rs.next()){
-                Seller newSeller =  sellerFromResultSet(rs,department);
+                Department dep = departmentMap.get(rs.getInt("DepartmentId"));
+                if(dep == null){
+                    dep = new Department(rs.getInt("DepartmentId"),rs.getString("DepName"));
+                }
+                Seller newSeller =  sellerFromResultSet(rs,dep);
                 sellersList.add(newSeller);
             }
 
@@ -94,7 +102,36 @@ public class SellerDaoJDBC implements SellerDao {
 
     @Override
     public List<Seller> findAll() {
-        return null;
+        String query = "SELECT seller.*,department.Name as DepName " +
+                "FROM seller INNER JOIN department " +
+                "ON seller.DepartmentId = department.Id " +
+                "ORDER BY Name ";
+
+        PreparedStatement st = null;
+        ResultSet rs = null;
+        List<Seller> sellersList = new ArrayList<>();
+        try {
+            st = conn.prepareStatement(query);
+            rs = st.executeQuery();
+            Map<Integer,Department> departmentMap = new HashMap<>();
+            while(rs.next()){
+                Department dep = departmentMap.get(rs.getInt("DepartmentId"));
+                if(dep == null){
+                    dep = new Department(rs.getInt("DepartmentId"),rs.getString("DepName"));
+                }
+                Seller newSeller =  sellerFromResultSet(rs,dep);
+                sellersList.add(newSeller);
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            DB.closeResultSet(rs);
+            DB.closeStatement(st);
+            DB.close();
+        }
+        return sellersList;
+
     }
     private Seller sellerFromResultSet(ResultSet rs, Department dep) throws  SQLException{
         Seller seller = new Seller();
