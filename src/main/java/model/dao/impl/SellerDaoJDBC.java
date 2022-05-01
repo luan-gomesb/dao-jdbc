@@ -1,10 +1,12 @@
 package model.dao.impl;
 
+import db.DB;
 import model.dao.SellerDao;
 import model.entities.Department;
 import model.entities.Seller;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class SellerDaoJDBC implements SellerDao {
@@ -58,6 +60,36 @@ public class SellerDaoJDBC implements SellerDao {
             }
         }
         return null;
+    }
+
+    @Override
+    public List<Seller> findByDepartment(Department department) {
+        String query = "SELECT seller.*,department.Name as DepName " +
+                "FROM seller INNER JOIN department " +
+                "ON seller.DepartmentId = department.Id " +
+                "WHERE DepartmentId = ? " +
+                "ORDER BY Name ";
+
+        PreparedStatement st = null;
+        ResultSet rs = null;
+        List<Seller> sellersList = new ArrayList<>();
+        try {
+            st = conn.prepareStatement(query);
+            st.setInt(1,department.getId());
+            rs = st.executeQuery();
+            while(rs.next()){
+                Seller newSeller =  sellerFromResultSet(rs,department);
+                sellersList.add(newSeller);
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            DB.closeResultSet(rs);
+            DB.closeStatement(st);
+            DB.close();
+        }
+        return sellersList;
     }
 
     @Override
